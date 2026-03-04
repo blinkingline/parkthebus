@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pitch & Shot: Football Dice</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            background: radial-gradient(circle, #2d5a27 0%, #1e3c1a 100%);
+            min-height: 100vh;
+            color: white;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        .pitch-line {
+            border: 2px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .die {
+            transition: all 0.2s ease;
+            cursor: pointer;
+        }
+
+        .die.locked {
+            border: 4px solid #fbbf24;
+            transform: scale(1.05);
+        }
+
+        .die-pitch {
+            background: #ffffff;
+            color: #1e3c1a;
+        }
+
+        .die-shot {
+            background: #ef4444;
+            color: white;
+        }
+    </style>
+</head>
+
+<body class="flex flex-col items-center p-4">
+
+    <div class="w-full max-w-md bg-black/40 rounded-lg p-4 mb-4 flex justify-between items-center pitch-line">
+        <div class="text-center">
+            <div class="text-xs uppercase opacity-70">Player 1</div>
+            <div id="score-0" class="text-4xl font-bold">0</div>
+        </div>
+        <div class="text-xl font-black italic text-yellow-500">PITCH & SHOT</div>
+        <div class="text-center">
+            <div class="text-xs uppercase opacity-70">Player 2</div>
+            <div id="score-1" class="text-4xl font-bold">0</div>
+        </div>
+    </div>
+
+    <div id="status-msg" class="mb-4 text-xl font-semibold text-center h-8">
+        Player 1's Turn
+    </div>
+
+    <div
+        class="relative w-full max-w-md bg-green-800/30 rounded-3xl border-4 border-white/20 p-8 flex flex-col justify-center gap-8 items-center">
+
+        <div class="flex gap-4">
+            <div id="die-0"
+                class="die die-pitch w-20 h-20 rounded-xl flex items-center justify-center font-bold text-sm text-center shadow-xl">
+                -</div>
+            <div id="die-1"
+                class="die die-pitch w-20 h-20 rounded-xl flex items-center justify-center font-bold text-sm text-center shadow-xl">
+                -</div>
+        </div>
+
+        <div id="die-shot"
+            class="die die-shot w-24 h-24 rounded-2xl flex items-center justify-center font-black text-lg text-center shadow-2xl hidden">
+            SHOT
+        </div>
+
+        <div class="flex flex-col items-center gap-2">
+            <button id="roll-btn"
+                class="bg-yellow-500 hover:bg-yellow-400 text-black font-black py-4 px-12 rounded-full shadow-lg transform active:scale-95 transition-all uppercase tracking-widest">
+                Roll Dice
+            </button>
+            <div id="rolls-left" class="text-sm opacity-80 italic">Rolls remaining: 3</div>
+        </div>
+    </div>
+
+    <script>
+        const PITCH_FACES = ["Attack", "Attack", "Defense", "Defense", "Midfield", "Midfield"];
+        const SHOT_FACES = ["GOAL!", "Midfield", "Counter Attack!", "Free Kick", "Corner", "Penalty"];
+
+        let state = {
+            scores: [0, 0],
+            currentPlayer: 0,
+            rollsRemaining: 3,
+            locked: [false, false],
+            values: [null, null],
+            shotActive: false,
+            isPenalty: false,
+            gameOver: false
+        };
+
+        const statusEl = document.getElementById('status-msg');
+        const rollBtn = document.getElementById('roll-btn');
+        const rollsLeftEl = document.getElementById('rolls-left');
+        const shotDieEl = document.getElementById('die-shot');
+
+        function updateUI() {
+            document.getElementById('score-0').innerText = state.scores[0];
+            document.getElementById('score-1').innerText = state.scores[1];
+
+            for (let i = 0; i < 2; i++) {
+                const el = document.getElementById(`die-${i}`);
+                el.innerText = state.values[i] || "-";
+                el.classList.toggle('locked', state.locked[i]);
+                el.style.opacity = state.shotActive ? "0.3" : "1";
+            }
+
+            shotDieEl.classList.toggle('hidden', !state.shotActive);
+
+            if (state.gameOver) {
+                rollBtn.innerText = "New Game";
+                rollsLeftEl.innerText = "Match Over";
+                rollBtn.disabled = false;
+                rollBtn.classList.remove('opacity-50', 'cursor-not-allowed', 'grayscale');
+            } else if (state.shotActive) {
+                rollBtn.innerText = "TAKE THE SHOT";
+                rollsLeftEl.innerText = state.isPenalty ? "PENALTY KICK!" : "In the Box!";
+                rollBtn.disabled = state.currentPlayer === 1;
+                rollBtn.classList.toggle('opacity-50', state.currentPlayer === 1);
+                rollBtn.classList.toggle('cursor-not-allowed', state.currentPlayer === 1);
+                rollBtn.classList.toggle('grayscale', state.currentPlayer === 1);
+            } else {
+                rollBtn.innerText = "Roll Dice";
+                rollsLeftEl.innerText = `Rolls remaining: ${state.rollsRemaining}`;
+                rollBtn.disabled = state.currentPlayer === 1;
+                rollBtn.classList.toggle('opacity-50', state.currentPlayer === 1);
+                rollBtn.classList.toggle('cursor-not-allowed', state.currentPlayer === 1);
+                rollBtn.classList.toggle('grayscale', state.currentPlayer === 1);
+            }
+        }
+
+        function switchTurn(msg) {
+            state.currentPlayer = state.currentPlayer === 0 ? 1 : 0;
+            state.rollsRemaining = 3;
+            state.locked = [false, false];
+            state.values = [null, null];
+            state.shotActive = false;
+            state.isPenalty = false;
+            statusEl.innerText = `${msg ? msg + " | " : ""}Player ${state.currentPlayer + 1}'s Turn`;
+
+            if (state.currentPlayer === 1 && !state.gameOver) {
+                setTimeout(triggerAI, 1000);
+            }
+        }
+
+        async function triggerAI() {
+            if (state.currentPlayer !== 1 || state.gameOver) return;
+
+            // Add a small delay for "thinking"
+            await new Promise(resolve => setTimeout(resolve, 800));
+
+            performRoll();
+            updateUI();
+
+            // If the turn hasn't switched and we still have rolls or a shot, roll again
+            if (state.currentPlayer === 1 && !state.gameOver) {
+                if (state.shotActive || state.rollsRemaining > 0) {
+                    setTimeout(triggerAI, 1200);
+                }
+            }
+        }
+
+        function performRoll() {
+            // Shot Logic
+            if (state.shotActive) {
+                const shotResult = SHOT_FACES[Math.floor(Math.random() * 6)];
+
+                if (state.isPenalty) {
+                    if (["GOAL!", "Free Kick", "Midfield"].includes(shotResult)) {
+                        shotDieEl.innerText = shotResult;
+                        scoreGoal();
+                    } else if (shotResult === "Penalty") {
+                        statusEl.innerText = "Penalty again! Re-roll.";
+                        shotDieEl.innerText = "Penalty";
+                    } else {
+                        shotDieEl.innerText = shotResult;
+                        switchTurn("Penalty Missed!");
+                    }
+                } else if (statusEl.innerText.includes("Midfield")) {
+                    // One-time Midfield re-roll
+                    shotDieEl.innerText = shotResult;
+                    if (shotResult === "GOAL!") scoreGoal();
+                    else switchTurn("Shot missed");
+                } else {
+                    handleShot(shotResult);
+                }
+                updateUI();
+                return;
+            }
+
+            // Pitch Logic
+            if (state.rollsRemaining > 0) {
+                state.rollsRemaining--;
+
+                for (let i = 0; i < 2; i++) {
+                    if (!state.locked[i]) {
+                        state.values[i] = PITCH_FACES[Math.floor(Math.random() * 6)];
+                        if (state.values[i] === "Attack") state.locked[i] = true;
+                    }
+                }
+
+                // Rule: Double Midfield = +1 throw
+                if (state.values[0] === "Midfield" && state.values[1] === "Midfield") {
+                    state.rollsRemaining++;
+                    statusEl.innerText = "Midfield control! +1 Roll.";
+                }
+
+                // Rule: Double Defense = Opponent rolls Shot
+                if (state.values[0] === "Defense" && state.values[1] === "Defense") {
+                    state.currentPlayer = state.currentPlayer === 0 ? 1 : 0;
+                    state.shotActive = true;
+                    statusEl.innerText = "Defense Error! Opponent takes the shot!";
+
+                    // If turn switched to AI, trigger it
+                    if (state.currentPlayer === 1) setTimeout(triggerAI, 1000);
+                }
+                // Rule: Two Attacks = Shot
+                else if (state.locked[0] && state.locked[1]) {
+                    state.shotActive = true;
+                    statusEl.innerText = "In the box!";
+                }
+                else if (state.rollsRemaining === 0) {
+                    switchTurn("Possession lost");
+                }
+
+                updateUI();
+            }
+        }
+
+        function handleShot(val) {
+            shotDieEl.innerText = val;
+
+            if (val === "GOAL!") {
+                scoreGoal();
+            } else if (val === "Counter Attack!") {
+                statusEl.innerText = "COUNTER ATTACK!";
+                state.currentPlayer = state.currentPlayer === 0 ? 1 : 0;
+                if (state.currentPlayer === 1) setTimeout(triggerAI, 1000);
+                // Keep shotActive true so the opponent rolls immediately
+            } else if (val === "Midfield") {
+                statusEl.innerText = "Midfield - Re-rolling once...";
+                // Stay on shotActive, next click rolls again (one-off logic handled in roll listener)
+            } else if (val === "Corner" || val === "Free Kick") {
+                statusEl.innerText = val + "! Roll again.";
+            } else if (val === "Penalty") {
+                state.isPenalty = true;
+                statusEl.innerText = "PENALTY! Score on Goal, Free Kick, or Midfield.";
+            }
+        }
+
+        function scoreGoal() {
+            state.scores[state.currentPlayer]++;
+            if (state.scores[state.currentPlayer] >= 3) {
+                statusEl.innerText = `PLAYER ${state.currentPlayer + 1} WINS THE MATCH!`;
+                state.gameOver = true;
+            } else {
+                switchTurn(`GOAL scored by Player ${state.currentPlayer + 1}!`);
+            }
+        }
+
+        rollBtn.addEventListener('click', () => {
+            if (state.gameOver) {
+                location.reload();
+                return;
+            }
+            if (state.currentPlayer === 1) return; // Prevent clicking during AI turn
+
+            performRoll();
+        });
+
+        updateUI();
+    </script>
+</body>
+
+</html>
