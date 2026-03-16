@@ -4,280 +4,419 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Pitch & Shot: Football Dice</title>
+    <title>Park the Bus v3.9 - 90 Minutes</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         body {
-            background: radial-gradient(circle, #2d5a27 0%, #1e3c1a 100%);
-            min-height: 100vh;
+            background: #0f172a;
             color: white;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            font-family: ui-sans-serif, system-ui;
+            overflow-x: hidden;
         }
 
-        .pitch-line {
-            border: 2px solid rgba(255, 255, 255, 0.2);
+        .pitch {
+            background: #166534;
+            border: 4px solid #14532d;
+            position: relative;
+            height: 140px;
+            display: flex;
+            border-radius: 1rem;
+            margin: 20px 0;
+        }
+
+        .center-line {
+            position: absolute;
+            left: 50%;
+            top: 0;
+            bottom: 0;
+            width: 4px;
+            background: rgba(255, 255, 255, 0.5);
+            z-index: 10;
+        }
+
+        .zone {
+            flex: 1;
+            border-right: 1px dashed rgba(255, 255, 255, 0.1);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            font-size: 9px;
+            text-transform: uppercase;
+            font-weight: 800;
+            color: rgba(255, 255, 255, 0.3);
+        }
+
+        .active-target {
+            background: rgba(251, 191, 36, 0.2);
+            box-shadow: inset 0 0 15px rgba(251, 191, 36, 0.4);
+            color: white;
+            border: 2px solid #fbbf24;
         }
 
         .die {
-            transition: all 0.2s ease;
+            width: 42px;
+            height: 42px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 800;
             cursor: pointer;
+            transition: transform 0.1s;
+            border-bottom: 4px solid #cbd5e1;
+            background: white;
+            color: #166534;
         }
 
-        .die.locked {
-            border: 4px solid #fbbf24;
-            transform: scale(1.05);
+        .die-selected {
+            background: #fbbf24;
+            color: black;
+            transform: translateY(-3px);
+            border-bottom-color: #b45309;
         }
 
-        .die-pitch {
-            background: #ffffff;
-            color: #1e3c1a;
+        .die-sidelined {
+            background: #334155;
+            color: #64748b;
+            border: 1px solid #1e293b;
+            cursor: not-allowed;
+            opacity: 0.5;
+            border-bottom: none;
         }
 
-        .die-shot {
-            background: #ef4444;
+        .ball {
+            width: 22px;
+            height: 22px;
+            background: white;
+            border-radius: 50%;
+            border: 3px solid black;
+            position: absolute;
+            top: -11px;
+            transition: all 0.5s ease;
+            z-index: 100;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.5);
+        }
+
+        .wall-val {
+            font-size: 1.5rem;
+            font-weight: 900;
             color: white;
+            margin-top: 4px;
+        }
+
+        #ft-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.9);
+            z-index: 2000;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            backdrop-filter: blur(10px);
         }
     </style>
 </head>
 
-<body class="flex flex-col items-center p-4">
+<body class="p-4 flex flex-col items-center">
 
-    <div class="w-full max-w-md bg-black/40 rounded-lg p-4 mb-4 flex justify-between items-center pitch-line">
-        <div class="text-center">
-            <div class="text-xs uppercase opacity-70">Player 1</div>
-            <div id="score-0" class="text-4xl font-bold">0</div>
-        </div>
-        <div class="text-xl font-black italic text-yellow-500">PITCH & SHOT</div>
-        <div class="text-center">
-            <div class="text-xs uppercase opacity-70">Player 2</div>
-            <div id="score-1" class="text-4xl font-bold">0</div>
-        </div>
+    <div id="ft-overlay">
+        <div class="text-yellow-500 text-8xl mb-4">🏁</div>
+        <h1 class="text-6xl font-black italic text-white mb-2 uppercase">Full Time</h1>
+        <p id="ft-score" class="text-4xl font-bold mb-8 text-yellow-500">2 - 2</p>
+        <p id="ft-result" class="text-xl font-bold mb-12 uppercase tracking-[0.3em] text-white">It's a Draw</p>
+        <button onclick="location.reload()"
+            class="bg-blue-600 hover:bg-blue-500 px-16 py-5 rounded-2xl font-black text-xl uppercase tracking-widest shadow-2xl transition-all active:scale-95">Rematch</button>
     </div>
 
-    <div id="status-msg" class="mb-4 text-xl font-semibold text-center h-8">
-        Player 1's Turn
-    </div>
-
-    <div
-        class="relative w-full max-w-md bg-green-800/30 rounded-3xl border-4 border-white/20 p-8 flex flex-col justify-center gap-8 items-center">
-
-        <div class="flex gap-4">
-            <div id="die-0"
-                class="die die-pitch w-20 h-20 rounded-xl flex items-center justify-center font-bold text-sm text-center shadow-xl">
-                -</div>
-            <div id="die-1"
-                class="die die-pitch w-20 h-20 rounded-xl flex items-center justify-center font-bold text-sm text-center shadow-xl">
-                -</div>
+    <div class="max-w-5xl w-full bg-slate-900 border border-slate-800 p-6 rounded-3xl shadow-2xl">
+        <div class="flex justify-between items-center mb-4">
+            <div class="text-center w-24">
+                <p class="text-[10px] font-bold opacity-50 uppercase">Home</p>
+                <p id="score-h" class="text-5xl font-black">0</p>
+            </div>
+            <div class="text-center">
+                <h1 class="text-2xl font-black italic text-yellow-500 uppercase">PARK THE BUS</h1>
+                <div id="turn-badge"
+                    class="mt-2 py-1 px-4 rounded-full text-[10px] font-black uppercase bg-slate-800 border border-slate-700 text-slate-400">
+                    Turn 1 / 20</div>
+            </div>
+            <div class="text-center w-24">
+                <p class="text-[10px] font-bold opacity-50 uppercase">Visitor</p>
+                <p id="score-v" class="text-5xl font-black">0</p>
+            </div>
         </div>
 
-        <div id="die-shot"
-            class="die die-shot w-24 h-24 rounded-2xl flex items-center justify-center font-black text-lg text-center shadow-2xl hidden">
-            SHOT
+        <div class="pitch">
+            <div class="center-line"></div>
+            <div id="ball" class="ball"></div>
+            <div class="zone" id="z-3">Goal (H)<div class="wall-val" id="w-3">-</div>
+            </div>
+            <div class="zone" id="z-2">Z2 (H)<div class="wall-val" id="w-2">-</div>
+            </div>
+            <div class="zone" id="z-1">Z1 (H)<div class="wall-val" id="w-1">-</div>
+            </div>
+            <div class="zone" id="z1">Z1 (V)<div class="wall-val" id="w1">-</div>
+            </div>
+            <div class="zone" id="z2">Z2 (V)<div class="wall-val" id="w2">-</div>
+            </div>
+            <div class="zone" id="z3">Goal (V)<div class="wall-val" id="w3">-</div>
+            </div>
         </div>
 
-        <div class="flex flex-col items-center gap-2">
-            <button id="roll-btn"
-                class="bg-yellow-500 hover:bg-yellow-400 text-black font-black py-4 px-12 rounded-full shadow-lg transform active:scale-95 transition-all uppercase tracking-widest">
-                Roll Dice
-            </button>
-            <div id="rolls-left" class="text-sm opacity-80 italic">Rolls remaining: 3</div>
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <div class="bg-slate-800/50 p-4 rounded-xl border border-slate-700 col-span-2">
+                <div class="flex justify-between items-center mb-3">
+                    <span id="squad-label" class="text-[10px] font-black uppercase text-slate-400">Available
+                        Squad</span>
+                    <span id="sum-display" class="text-xs font-bold text-yellow-500">Total: 0</span>
+                </div>
+                <div id="hand" class="flex flex-wrap gap-2 min-h-[50px] mb-4"></div>
+                <div id="sidelined-section" class="border-t border-slate-700 pt-3">
+                    <span class="text-[10px] font-black uppercase text-slate-500 block mb-2">Sidelined</span>
+                    <div id="side" class="flex flex-wrap gap-2 min-h-[40px]"></div>
+                </div>
+            </div>
+
+            <div class="bg-slate-800 p-4 rounded-xl flex flex-col justify-center gap-3">
+                <div id="attack-controls">
+                    <button id="btn-attack"
+                        class="w-full bg-yellow-500 text-black font-black py-4 rounded-lg uppercase hover:bg-yellow-400 active:scale-95 transition-all">Attack</button>
+                </div>
+                <div id="defend-controls" class="hidden flex flex-col gap-2">
+                    <p class="text-[10px] uppercase font-bold text-center text-blue-300 mb-1">Set Wall</p>
+                    <div id="wall-assign-grid" class="grid grid-cols-2 gap-1"></div>
+                    <button id="btn-lock-def" class="bg-green-600 py-3 rounded font-black uppercase text-xs mt-2">Lock
+                        In</button>
+                </div>
+                <button id="btn-pass"
+                    class="w-full bg-slate-700 text-slate-400 py-2 rounded font-bold uppercase text-[10px] mt-2">End
+                    Turn</button>
+            </div>
+        </div>
+
+        <div id="log"
+            class="mt-6 bg-black/40 p-4 rounded-xl h-32 overflow-y-auto text-[11px] font-mono text-emerald-400 border border-slate-800">
         </div>
     </div>
 
     <script>
-        const PITCH_FACES = ["Attack", "Attack", "Defense", "Defense", "Midfield", "Midfield"];
-        const SHOT_FACES = ["GOAL!", "Midfield", "Counter Attack!", "Free Kick", "Corner", "Penalty"];
-
+        const Z_IDS = ["-3", "-2", "-1", "1", "2", "3"];
         let state = {
-            scores: [0, 0],
-            currentPlayer: 0,
-            rollsRemaining: 3,
-            locked: [false, false],
-            values: [null, null],
-            shotActive: false,
-            isPenalty: false,
-            gameOver: false
+            scores: { h: 0, v: 0 },
+            ballPos: 0,
+            turn: 0, // 0: Home, 1: Visitor
+            turnCount: 1,
+            maxTurns: 20,
+            phase: 'attack',
+            dice: [], side: [], sel: [],
+            wall: { "-3": 0, "-2": 0, "-1": 0, "1": 0, "2": 0, "3": 0 }
         };
 
-        const statusEl = document.getElementById('status-msg');
-        const rollBtn = document.getElementById('roll-btn');
-        const rollsLeftEl = document.getElementById('rolls-left');
-        const shotDieEl = document.getElementById('die-shot');
+        const log = (m, c = "text-emerald-400") => {
+            const l = document.getElementById('log');
+            l.innerHTML += `<div class="${c}">> ${m}</div>`;
+            l.scrollTop = l.scrollHeight;
+        };
+
+        const roll = () => Math.floor(Math.random() * 6) + 1;
 
         function updateUI() {
-            document.getElementById('score-0').innerText = state.scores[0];
-            document.getElementById('score-1').innerText = state.scores[1];
+            document.getElementById('score-h').innerText = state.scores.h;
+            document.getElementById('score-v').innerText = state.scores.v;
+            document.getElementById('turn-badge').innerText = `Turn ${state.turnCount} / ${state.maxTurns}`;
 
-            for (let i = 0; i < 2; i++) {
-                const el = document.getElementById(`die-${i}`);
-                el.innerText = state.values[i] || "-";
-                el.classList.toggle('locked', state.locked[i]);
-                el.style.opacity = state.shotActive ? "0.3" : "1";
+            const posMap = { "-3": 8, "-2": 25, "-1": 42, "0": 50, "1": 58, "2": 75, "3": 92 };
+            document.getElementById('ball').style.left = `calc(${posMap[state.ballPos]}% - 11px)`;
+
+            Z_IDS.forEach(z => {
+                document.getElementById(`z${z}`).classList.remove('active-target');
+                document.getElementById(`w${z}`).innerText = state.wall[z] || "-";
+            });
+
+            if (state.phase === 'attack') {
+                const target = getNextZone(state.ballPos, state.turn === 0 ? 1 : -1);
+                if (target) document.getElementById(`z${target}`).classList.add('active-target');
             }
 
-            shotDieEl.classList.toggle('hidden', !state.shotActive);
+            const h = document.getElementById('hand'); h.innerHTML = '';
+            state.dice.forEach((v, i) => {
+                const d = document.createElement('div');
+                d.className = `die ${state.sel.includes(i) ? 'die-selected' : ''}`;
+                d.innerText = v;
+                d.onclick = () => {
+                    const sIdx = state.sel.indexOf(i);
+                    if (sIdx > -1) state.sel.splice(sIdx, 1); else state.sel.push(i);
+                    updateUI();
+                };
+                h.appendChild(d);
+            });
 
-            if (state.gameOver) {
-                rollBtn.innerText = "New Game";
-                rollsLeftEl.innerText = "Match Over";
-                rollBtn.disabled = false;
-                rollBtn.classList.remove('opacity-50', 'cursor-not-allowed', 'grayscale');
-            } else if (state.shotActive) {
-                rollBtn.innerText = "TAKE THE SHOT";
-                rollsLeftEl.innerText = state.isPenalty ? "PENALTY KICK!" : "In the Box!";
-                rollBtn.disabled = state.currentPlayer === 1;
-                rollBtn.classList.toggle('opacity-50', state.currentPlayer === 1);
-                rollBtn.classList.toggle('cursor-not-allowed', state.currentPlayer === 1);
-                rollBtn.classList.toggle('grayscale', state.currentPlayer === 1);
+            const s = document.getElementById('side'); s.innerHTML = '';
+            state.side.forEach(v => {
+                const d = document.createElement('div'); d.className = 'die die-sidelined'; d.innerText = v;
+                s.appendChild(d);
+            });
+
+            const sum = state.sel.reduce((a, c) => a + state.dice[c], 0);
+            document.getElementById('sum-display').innerText = `Total: ${sum}`;
+
+            const actionBtns = document.getElementById('attack-controls');
+            const setupBtns = document.getElementById('defend-controls');
+            if (state.phase === 'defend') {
+                actionBtns.classList.add('hidden');
+                setupBtns.classList.remove('hidden');
+                renderDefenseButtons();
             } else {
-                rollBtn.innerText = "Roll Dice";
-                rollsLeftEl.innerText = `Rolls remaining: ${state.rollsRemaining}`;
-                rollBtn.disabled = state.currentPlayer === 1;
-                rollBtn.classList.toggle('opacity-50', state.currentPlayer === 1);
-                rollBtn.classList.toggle('cursor-not-allowed', state.currentPlayer === 1);
-                rollBtn.classList.toggle('grayscale', state.currentPlayer === 1);
+                actionBtns.classList.remove('hidden');
+                setupBtns.classList.add('hidden');
             }
         }
 
-        function switchTurn(msg) {
-            state.currentPlayer = state.currentPlayer === 0 ? 1 : 0;
-            state.rollsRemaining = 3;
-            state.locked = [false, false];
-            state.values = [null, null];
-            state.shotActive = false;
-            state.isPenalty = false;
-            statusEl.innerText = `${msg ? msg + " | " : ""}Player ${state.currentPlayer + 1}'s Turn`;
-
-            if (state.currentPlayer === 1 && !state.gameOver) {
-                setTimeout(triggerAI, 1000);
-            }
+        function getNextZone(curr, dir) {
+            if (curr === 0) return dir === 1 ? "1" : "-1";
+            const idx = Z_IDS.indexOf(curr.toString());
+            const nextIdx = idx + dir;
+            if (nextIdx < 0 || nextIdx >= Z_IDS.length) return null;
+            return Z_IDS[nextIdx];
         }
 
-        async function triggerAI() {
-            if (state.currentPlayer !== 1 || state.gameOver) return;
+        function renderDefenseButtons() {
+            const grid = document.getElementById('wall-assign-grid');
+            grid.innerHTML = '';
+            Z_IDS.forEach(z => {
+                const zVal = parseInt(z);
+                const canPlace = state.turn === 1 ? (zVal < state.ballPos) : (zVal > state.ballPos);
+                if (canPlace) {
+                    const btn = document.createElement('button');
+                    btn.className = "bg-blue-600 py-2 rounded text-[9px] font-black uppercase";
+                    btn.innerText = `SET ${z.replace('-', 'H').replace('1', 'Z1').replace('2', 'Z2').replace('3', 'GOAL')}`;
+                    btn.onclick = () => {
+                        const sum = state.sel.reduce((a, c) => a + state.dice[c], 0);
+                        if (sum > 0) {
+                            state.wall[z] = (state.wall[z] || 0) + sum;
+                            state.dice = state.dice.filter((_, i) => !state.sel.includes(i));
+                            state.sel = [];
+                            updateUI();
+                        }
+                    };
+                    grid.appendChild(btn);
+                }
+            });
+        }
 
-            // Add a small delay for "thinking"
-            await new Promise(resolve => setTimeout(resolve, 800));
+        function triggerFullTime() {
+            const h = state.scores.h;
+            const v = state.scores.v;
+            let resultTxt = h === v ? "It's a Draw" : (h > v ? "Home Victory" : "Visitor Victory");
+            document.getElementById('ft-score').innerText = `${h} - ${v}`;
+            document.getElementById('ft-result').innerText = resultTxt;
+            document.getElementById('ft-overlay').style.display = 'flex';
+        }
 
-            performRoll();
+        function turnover() {
+            if (state.turnCount >= state.maxTurns) {
+                triggerFullTime();
+                return;
+            }
+            state.turnCount++;
+            state.turn = state.turn === 0 ? 1 : 0;
+            state.sel = []; state.side = [];
+            state.dice = Array.from({ length: 6 }, roll);
+            Object.keys(state.wall).forEach(k => state.wall[k] = 0);
+
+            if (state.turn === 1) {
+                state.phase = 'defend';
+                log("Turnover! Visitor's Turn.");
+            } else {
+                state.phase = 'attack';
+                const d = Array.from({ length: 6 }, roll).sort((a, b) => b - a);
+                state.wall["3"] = d[0] + d[1] + d[2];
+                if (state.ballPos < 2) state.wall["2"] = d[3] + d[4];
+                if (state.ballPos < 1) state.wall["1"] = d[5];
+                log("AI has set its Wall.");
+                updateUI();
+            }
             updateUI();
-
-            // If the turn hasn't switched and we still have rolls or a shot, roll again
-            if (state.currentPlayer === 1 && !state.gameOver) {
-                if (state.shotActive || state.rollsRemaining > 0) {
-                    setTimeout(triggerAI, 1200);
-                }
-            }
         }
 
-        function performRoll() {
-            // Shot Logic
-            if (state.shotActive) {
-                const shotResult = SHOT_FACES[Math.floor(Math.random() * 6)];
+        document.getElementById('btn-lock-def').onclick = () => {
+            if (state.dice.length > 0) { alert("Assign all 6 dice!"); return; }
+            state.phase = 'attack';
+            state.dice = Array.from({ length: 6 }, roll);
+            updateUI();
+            runAi();
+        };
 
-                if (state.isPenalty) {
-                    if (["GOAL!", "Free Kick", "Midfield"].includes(shotResult)) {
-                        shotDieEl.innerText = shotResult;
-                        scoreGoal();
-                    } else if (shotResult === "Penalty") {
-                        statusEl.innerText = "Penalty again! Re-roll.";
-                        shotDieEl.innerText = "Penalty";
-                    } else {
-                        shotDieEl.innerText = shotResult;
-                        switchTurn("Penalty Missed!");
-                    }
-                } else if (statusEl.innerText.includes("Midfield")) {
-                    // One-time Midfield re-roll
-                    shotDieEl.innerText = shotResult;
-                    if (shotResult === "GOAL!") scoreGoal();
-                    else switchTurn("Shot missed");
-                } else {
-                    handleShot(shotResult);
+        async function handleAttack() {
+            const sum = state.sel.reduce((a, c) => a + state.dice[c], 0);
+            const target = getNextZone(state.ballPos, 1);
+            if (!target) return;
+            const wallVal = state.wall[target] || 0;
+
+            if (sum > wallVal) {
+                log(`Breach! ${sum} beats ${wallVal}`);
+                state.ballPos = parseInt(target);
+                const used = state.sel.map(i => state.dice[i]);
+                state.dice = state.dice.filter((_, i) => !state.sel.includes(i));
+                state.sel = [];
+                if (state.side.length > 0) {
+                    const rec = Array.from({ length: state.side.length }, roll);
+                    state.dice.push(...rec);
                 }
-                updateUI();
-                return;
-            }
-
-            // Pitch Logic
-            if (state.rollsRemaining > 0) {
-                state.rollsRemaining--;
-
-                for (let i = 0; i < 2; i++) {
-                    if (!state.locked[i]) {
-                        state.values[i] = PITCH_FACES[Math.floor(Math.random() * 6)];
-                        if (state.values[i] === "Attack") state.locked[i] = true;
-                    }
+                state.side = used;
+                if (state.ballPos === 3) {
+                    log("GOAL!", "text-yellow-400 font-bold");
+                    state.scores.h++; state.ballPos = 0;
+                    turnover();
                 }
-
-                // Rule: Double Midfield = +1 throw
-                if (state.values[0] === "Midfield" && state.values[1] === "Midfield") {
-                    state.rollsRemaining++;
-                    statusEl.innerText = "Midfield control! +1 Roll.";
-                }
-
-                // Rule: Double Defense = Opponent rolls Shot
-                if (state.values[0] === "Defense" && state.values[1] === "Defense") {
-                    state.currentPlayer = state.currentPlayer === 0 ? 1 : 0;
-                    state.shotActive = true;
-                    statusEl.innerText = "Defense Error! Opponent takes the shot!";
-
-                    // If turn switched to AI, trigger it
-                    if (state.currentPlayer === 1) setTimeout(triggerAI, 1000);
-                }
-                // Rule: Two Attacks = Shot
-                else if (state.locked[0] && state.locked[1]) {
-                    state.shotActive = true;
-                    statusEl.innerText = "In the box!";
-                }
-                else if (state.rollsRemaining === 0) {
-                    switchTurn("Possession lost");
-                }
-
-                updateUI();
-            }
-        }
-
-        function handleShot(val) {
-            shotDieEl.innerText = val;
-
-            if (val === "GOAL!") {
-                scoreGoal();
-            } else if (val === "Counter Attack!") {
-                statusEl.innerText = "COUNTER ATTACK!";
-                state.currentPlayer = state.currentPlayer === 0 ? 1 : 0;
-                if (state.currentPlayer === 1) setTimeout(triggerAI, 1000);
-                // Keep shotActive true so the opponent rolls immediately
-            } else if (val === "Midfield") {
-                statusEl.innerText = "Midfield - Re-rolling once...";
-                // Stay on shotActive, next click rolls again (one-off logic handled in roll listener)
-            } else if (val === "Corner" || val === "Free Kick") {
-                statusEl.innerText = val + "! Roll again.";
-            } else if (val === "Penalty") {
-                state.isPenalty = true;
-                statusEl.innerText = "PENALTY! Score on Goal, Free Kick, or Midfield.";
-            }
-        }
-
-        function scoreGoal() {
-            state.scores[state.currentPlayer]++;
-            if (state.scores[state.currentPlayer] >= 3) {
-                statusEl.innerText = `PLAYER ${state.currentPlayer + 1} WINS THE MATCH!`;
-                state.gameOver = true;
             } else {
-                switchTurn(`GOAL scored by Player ${state.currentPlayer + 1}!`);
+                log("Blocked! Turnover.");
+                turnover();
+            }
+            updateUI();
+        }
+
+        async function runAi() {
+            while (state.turn === 1 && state.phase === 'attack') {
+                await new Promise(r => setTimeout(r, 1200));
+                const target = getNextZone(state.ballPos, -1);
+                if (!target) return;
+                const wallVal = state.wall[target] || 0;
+                state.dice.sort((a, b) => b - a);
+                let cur = 0; let usedIdx = [];
+                for (let i = 0; i < state.dice.length; i++) {
+                    cur += state.dice[i]; usedIdx.push(i);
+                    if (cur > wallVal) break;
+                }
+
+                if (cur > wallVal) {
+                    log(`AI Attack: ${cur} > ${wallVal}`);
+                    state.ballPos = parseInt(target);
+                    const v = usedIdx.map(i => state.dice[i]);
+                    state.dice = state.dice.filter((_, i) => !usedIdx.includes(i));
+                    if (state.side.length > 0) state.dice.push(...Array.from({ length: state.side.length }, roll));
+                    state.side = v;
+                    if (state.ballPos === -3) {
+                        log("AI GOAL!"); state.scores.v++; state.ballPos = 0;
+                        turnover(); return;
+                    }
+                } else {
+                    log("AI Blocked!"); turnover(); return;
+                }
+                updateUI();
+                if (state.dice.length === 0 && state.turn === 1) { turnover(); return; }
             }
         }
 
-        rollBtn.addEventListener('click', () => {
-            if (state.gameOver) {
-                location.reload();
-                return;
-            }
-            if (state.currentPlayer === 1) return; // Prevent clicking during AI turn
+        document.getElementById('btn-attack').onclick = handleAttack;
+        document.getElementById('btn-pass').onclick = turnover;
 
-            performRoll();
-        });
-
+        state.dice = Array.from({ length: 6 }, roll);
+        const startD = Array.from({ length: 6 }, roll).sort((a, b) => b - a);
+        state.wall["3"] = startD[0] + startD[1] + startD[2]; state.wall["2"] = startD[3] + startD[4]; state.wall["1"] = startD[5];
         updateUI();
     </script>
 </body>

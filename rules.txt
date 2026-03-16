@@ -1,0 +1,63 @@
+# PARK THE BUS
+
+**A Tactical Duel of Stamina & Strategy**
+
+### OVERVIEW
+
+A high-stakes resource management duel where players spend dice to break through defensive lines, balancing immediate progress against the physical exhaustion of their squad. Unlike traditional games, the match is played over a set number of possessions, making every roll a race against the clock.
+
+### COMPONENTS
+
+* **6 Standard Dice (d6)** for each player (12 total).
+* **The Pitch:** A linear board with 6 contested zones and a center line:
+`[Goal H] — [Z2 H] — [Z1 H] — | — [Z1 V] — [Z2 V] — [Goal V]`
+* **Ball Tracker:** A single token to mark the ball's current position.
+* **Turn Tracker:** A way to track 20 total possessions (10 per player).
+
+### GOAL OF THE GAME
+
+Score the most goals before the **20th turn** (possession) concludes. Ties are allowed.
+
+### GAME CONCEPTS
+
+* **The Sidelined Pool:** Dice used to move the ball are "Sidelined" and cannot participate in the *very next* attack.
+* **Stamina Recovery (The Re-roll):** Sidelined dice return to your hand after the ball moves *another* step forward. **You must immediately re-roll recovered dice.** This simulates the fluctuating energy and composure of your players.
+* **The Full-Pitch Press:** Defenders can place their "Wall" in **any** zone between the ball and their own goal, even on the opponent's side of the pitch.
+
+### GAMEPLAY
+
+Choose a starting player at random. The ball starts on the **Center Line**.
+
+#### 1. The Defensive Setup
+
+Whenever possession changes or a goal is scored, the **Defender** rolls all 6 of their dice. They must assign these values to any zones between the ball and their goal to create "The Wall."
+
+* **Capacity:** You may assign any number of dice to a single zone, but you must commit **all 6 dice** to the pitch before the attack begins.
+* **The Wall:** Total the dice in each zone. This is the number the Attacker must beat.
+
+#### 2. The Attacking Drive
+
+The Attacker looks at their available "Fresh" dice and rolls them.
+
+* **The Attack:** Select one or more dice whose sum **exceeds** the total of the zone immediately in front of the ball.
+* **Movement:** If successful, move the ball one zone forward.
+* **Update Dice:** 1. Move the dice used for this attack to the **Sideline**.
+2. Any dice *already* on the Sideline are **Recovered** (returned to hand and immediately re-rolled).
+* **Defender Wins Ties:** If the sums are equal, the defense holds and possession flips.
+
+#### 3. Change of Possession (The "Turn")
+
+A "Turn" ends and possession flips if:
+
+* The Attacker fails to beat a Zone total.
+* The Attacker has **0 dice** remaining in their hand.
+* A Goal is scored.
+* **Upon Turnover:** The ball stays exactly where it is (unless a goal was scored, then it resets to the Center Line). Increment the Turn Counter. The new Defender rolls all 6 dice to set a new Wall.
+
+### END OF GAME
+
+The game ends after the **20th turn** is completed.
+
+* **Winner:** The player with the most goals.
+* **Draw:** if the scores are equal at the end of the 20th turn, the match is a Draw.
+
