@@ -104,9 +104,8 @@
         }
 
         .die {
-            width: 46px;
-            height: 52px;
-            border-radius: 8px;
+            width: 50px;
+            height: 50px;
             display: flex;
             flex-direction: column;
             align-items: center;
@@ -114,11 +113,19 @@
             gap: 1px;
             font-weight: 800;
             cursor: pointer;
-            transition: transform 0.1s;
-            border-bottom: 4px solid #cbd5e1;
+            transition: transform 0.1s, filter 0.1s;
             background: white;
             color: #166534;
+            filter: drop-shadow(0 4px 0 #cbd5e1);
         }
+
+        /* Die shapes */
+        .die-d4  { clip-path: polygon(50% 0%, 97% 97%, 3% 97%); padding-top: 18px; }
+        .die-d6  { border-radius: 8px; }
+        .die-d8  { clip-path: polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%); }
+        .die-d10 { clip-path: polygon(50% 0%, 100% 35%, 82% 100%, 18% 100%, 0% 35%); }
+        .die-d12 { clip-path: polygon(50% 0%, 93% 25%, 93% 75%, 50% 100%, 7% 75%, 7% 25%); }
+        .die-d20 { clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%); }
 
         .die-label {
             font-size: 8px;
@@ -138,16 +145,15 @@
             background: #fbbf24;
             color: black;
             transform: translateY(-3px);
-            border-bottom-color: #b45309;
+            filter: drop-shadow(0 4px 0 #b45309);
         }
 
         .die-tired {
             background: #334155;
             color: #64748b;
-            border: 1px solid #1e293b;
             cursor: not-allowed;
             opacity: 0.5;
-            border-bottom: none;
+            filter: none;
         }
 
         .ball {
@@ -248,6 +254,7 @@
                 <div id="attack-controls">
                     <button id="btn-attack"
                         class="w-full bg-yellow-500 text-black font-black py-4 rounded-lg uppercase hover:bg-yellow-400 active:scale-95 transition-all">Attack</button>
+                    <p class="text-[9px] text-center text-slate-500 mt-2 uppercase tracking-wide">Select 1–3 dice · must beat each zone to advance</p>
                 </div>
                 <div id="defend-controls" class="hidden flex flex-col gap-2">
                     <p class="text-[10px] uppercase font-bold text-center text-blue-300 mb-1">Set Wall</p>
@@ -288,7 +295,7 @@
         let state = {
             scores: { h: 0, v: 0 },
             ballPos: 0,
-            turn: 0,          // 0 = Home attacks, 1 = Visitor attacks
+            turn: Math.random() < 0.5 ? 0 : 1, // random kick-off
             phase: 'attack',  // 'defend' | 'attack'
             hDice: makeDice(),
             vDice: makeDice(),
@@ -309,7 +316,7 @@
             const el = document.createElement('div');
             const tired = !isAvail(d);
             const selected = state.sel.includes(d.id);
-            el.className = `die ${selected ? 'die-selected' : ''} ${tired ? 'die-tired' : ''}`;
+            el.className = `die die-d${d.sides} ${selected ? 'die-selected' : ''} ${tired ? 'die-tired' : ''}`;
             el.innerHTML = `<span class="die-label">d${d.sides}</span><span class="die-num">${tired ? '·' : d.value}</span>`;
             if (clickable && !tired) {
                 el.onclick = () => {
@@ -335,7 +342,9 @@
 
             Z_IDS.forEach(z => {
                 document.getElementById(`z${z}`).classList.remove('active-target');
-                document.getElementById(`w${z}`).innerText = state.wall[z] || "-";
+                // Show "0" for empty zones during attack so players know they still must commit a die
+                document.getElementById(`w${z}`).innerText =
+                    state.wall[z] > 0 ? state.wall[z] : (state.phase === 'attack' ? '0' : '-');
             });
             if (state.phase === 'attack') {
                 const target = getNextZone(state.ballPos, state.turn === 0 ? 1 : -1);
@@ -392,7 +401,7 @@
                 .sort((a, b) => Math.abs(parseInt(a)) - Math.abs(parseInt(b)))
                 .forEach(z => {
                     const zVal = parseInt(z);
-                    if (zVal >= state.ballPos) return; // home defends negative side
+                    if (zVal >= 0 || zVal >= state.ballPos) return; // home defends only negative zones not yet bypassed
                     const btn = document.createElement('button');
                     btn.className = "bg-blue-600 py-2 rounded text-[9px] font-black uppercase";
                     btn.innerText = `SET ${ZONE_NAMES[z]}`;
@@ -446,25 +455,32 @@
 
         // ── AI wall setup ────────────────────────────────────────────
         function aiSetWall() {
-            // d20 auto to visitor goal
             const d20 = state.vDice[D20];
             if (isAvail(d20)) { state.wall["3"] = d20.value; useDie(d20); }
 
-            // Place top available dice: 2 in defense, 1 in midfield
             const avail = state.vDice.filter(d => isAvail(d)).sort((a, b) => b.value - a.value);
-            if (avail[0]) { state.wall["2"] += avail[0].value; useDie(avail[0]); }
-            if (avail[1]) { state.wall["2"] += avail[1].value; useDie(avail[1]); }
-            if (avail[2]) { state.wall["1"]  = avail[2].value; useDie(avail[2]); }
+            let i = 0;
+            // Only defend zones the attacker still needs to breach
+            if (state.ballPos < 2) { // zone 2 not yet passed
+                if (avail[i]) { state.wall["2"] += avail[i].value; useDie(avail[i]); i++; }
+                if (avail[i]) { state.wall["2"] += avail[i].value; useDie(avail[i]); i++; }
+            }
+            if (state.ballPos < 1) { // zone 1 not yet passed
+                if (avail[i]) { state.wall["1"] = avail[i].value; useDie(avail[i]); i++; }
+            }
         }
 
         // ── End possession ───────────────────────────────────────────
         function endPossession(scored) {
-            state.ballPos = 0;
-            if (scored && (state.scores.h >= WIN_GOALS || state.scores.v >= WIN_GOALS)) {
-                updateUI();
-                triggerFullTime();
-                return;
+            if (scored) {
+                state.ballPos = 0; // reset to center only after a goal
+                if (state.scores.h >= WIN_GOALS || state.scores.v >= WIN_GOALS) {
+                    updateUI();
+                    triggerFullTime();
+                    return;
+                }
             }
+            // on turnover, ball stays where it was stopped
             state.possession++;
             state.turn = 1 - state.turn;
             startPossession();
