@@ -15,13 +15,22 @@
         }
 
         .pitch {
-            background: #166534;
-            border: 4px solid #14532d;
+            background: repeating-linear-gradient(
+                90deg,
+                #166534 0%, #166534 16.666%,
+                #15803d 16.666%, #15803d 33.333%,
+                #166534 33.333%, #166534 50%,
+                #15803d 50%, #15803d 66.666%,
+                #166534 66.666%, #166534 83.333%,
+                #15803d 83.333%, #15803d 100%
+            );
+            border: 4px solid rgba(255, 255, 255, 0.7);
             position: relative;
             height: 140px;
             display: flex;
             border-radius: 1rem;
             margin: 20px 0;
+            overflow: hidden;
         }
 
         .center-line {
@@ -29,9 +38,48 @@
             left: 50%;
             top: 0;
             bottom: 0;
-            width: 4px;
-            background: rgba(255, 255, 255, 0.5);
+            width: 3px;
+            background: rgba(255, 255, 255, 0.6);
             z-index: 10;
+        }
+
+        .center-circle {
+            position: absolute;
+            left: 50%;
+            top: 50%;
+            transform: translate(-50%, -50%);
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            border: 3px solid rgba(255, 255, 255, 0.4);
+            z-index: 9;
+            pointer-events: none;
+        }
+
+        #z-3::before {
+            content: '';
+            position: absolute;
+            left: 4px;
+            top: 18%;
+            height: 64%;
+            width: 12px;
+            border-top: 3px solid rgba(255, 255, 255, 0.8);
+            border-right: 3px solid rgba(255, 255, 255, 0.8);
+            border-bottom: 3px solid rgba(255, 255, 255, 0.8);
+            border-radius: 0 2px 2px 0;
+        }
+
+        #z3::before {
+            content: '';
+            position: absolute;
+            right: 4px;
+            top: 18%;
+            height: 64%;
+            width: 12px;
+            border-top: 3px solid rgba(255, 255, 255, 0.8);
+            border-left: 3px solid rgba(255, 255, 255, 0.8);
+            border-bottom: 3px solid rgba(255, 255, 255, 0.8);
+            border-radius: 2px 0 0 2px;
         }
 
         .zone {
@@ -56,18 +104,34 @@
         }
 
         .die {
-            width: 42px;
-            height: 42px;
+            width: 46px;
+            height: 52px;
             border-radius: 8px;
             display: flex;
+            flex-direction: column;
             align-items: center;
             justify-content: center;
+            gap: 1px;
             font-weight: 800;
             cursor: pointer;
             transition: transform 0.1s;
             border-bottom: 4px solid #cbd5e1;
             background: white;
             color: #166534;
+        }
+
+        .die-label {
+            font-size: 8px;
+            font-weight: 700;
+            opacity: 0.55;
+            line-height: 1;
+            letter-spacing: 0.03em;
+        }
+
+        .die-num {
+            font-size: 1rem;
+            font-weight: 900;
+            line-height: 1;
         }
 
         .die-selected {
@@ -77,7 +141,7 @@
             border-bottom-color: #b45309;
         }
 
-        .die-sidelined {
+        .die-tired {
             background: #334155;
             color: #64748b;
             border: 1px solid #1e293b;
@@ -141,7 +205,7 @@
                 <h1 class="text-2xl font-black italic text-yellow-500 uppercase">PARK THE BUS</h1>
                 <div id="turn-badge"
                     class="mt-2 py-1 px-4 rounded-full text-[10px] font-black uppercase bg-slate-800 border border-slate-700 text-slate-400">
-                    Turn 1 / 20</div>
+                    Home Attacks — P1</div>
             </div>
             <div class="text-center w-24">
                 <p class="text-[10px] font-bold opacity-50 uppercase">Visitor</p>
@@ -151,16 +215,17 @@
 
         <div class="pitch">
             <div class="center-line"></div>
+            <div class="center-circle"></div>
             <div id="ball" class="ball"></div>
             <div class="zone" id="z-3">Goal (H)<div class="wall-val" id="w-3">-</div>
             </div>
-            <div class="zone" id="z-2">Z2 (H)<div class="wall-val" id="w-2">-</div>
+            <div class="zone" id="z-2">Defense (H)<div class="wall-val" id="w-2">-</div>
             </div>
-            <div class="zone" id="z-1">Z1 (H)<div class="wall-val" id="w-1">-</div>
+            <div class="zone" id="z-1">Midfield (H)<div class="wall-val" id="w-1">-</div>
             </div>
-            <div class="zone" id="z1">Z1 (V)<div class="wall-val" id="w1">-</div>
+            <div class="zone" id="z1">Midfield (V)<div class="wall-val" id="w1">-</div>
             </div>
-            <div class="zone" id="z2">Z2 (V)<div class="wall-val" id="w2">-</div>
+            <div class="zone" id="z2">Defense (V)<div class="wall-val" id="w2">-</div>
             </div>
             <div class="zone" id="z3">Goal (V)<div class="wall-val" id="w3">-</div>
             </div>
@@ -169,13 +234,12 @@
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
             <div class="bg-slate-800/50 p-4 rounded-xl border border-slate-700 col-span-2">
                 <div class="flex justify-between items-center mb-3">
-                    <span id="squad-label" class="text-[10px] font-black uppercase text-slate-400">Available
-                        Squad</span>
-                    <span id="sum-display" class="text-xs font-bold text-yellow-500">Total: 0</span>
+                    <span id="squad-label" class="text-[10px] font-black uppercase text-slate-400">Your Dice</span>
+                    <span id="sum-display" class="text-xs font-bold text-yellow-500">Selected: 0</span>
                 </div>
                 <div id="hand" class="flex flex-wrap gap-2 min-h-[50px] mb-4"></div>
                 <div id="sidelined-section" class="border-t border-slate-700 pt-3">
-                    <span class="text-[10px] font-black uppercase text-slate-500 block mb-2">Sidelined</span>
+                    <span class="text-[10px] font-black uppercase text-slate-500 block mb-2">Resting</span>
                     <div id="side" class="flex flex-wrap gap-2 min-h-[40px]"></div>
                 </div>
             </div>
@@ -187,7 +251,7 @@
                 </div>
                 <div id="defend-controls" class="hidden flex flex-col gap-2">
                     <p class="text-[10px] uppercase font-bold text-center text-blue-300 mb-1">Set Wall</p>
-                    <div id="wall-assign-grid" class="grid grid-cols-2 gap-1"></div>
+                    <div id="wall-assign-grid" class="grid grid-cols-1 gap-1"></div>
                     <button id="btn-lock-def" class="bg-green-600 py-3 rounded font-black uppercase text-xs mt-2">Lock
                         In</button>
                 </div>
@@ -203,30 +267,68 @@
     </div>
 
     <script>
+        // ── Constants ────────────────────────────────────────────────
         const Z_IDS = ["-3", "-2", "-1", "1", "2", "3"];
+        const ZONE_NAMES = {
+            "-3": "GOAL (H)", "-2": "DEFENSE (H)", "-1": "MIDFIELD (H)",
+            "1": "MIDFIELD (V)", "2": "DEFENSE (V)", "3": "GOAL (V)"
+        };
+        const DIE_SIDES = [4, 6, 8, 10, 10, 12, 20]; // index 6 = d20 goalie
+        const D20 = 6;
+        const WIN_GOALS = 3;
+
+        // ── Dice helpers ─────────────────────────────────────────────
+        // restUntil=0 so possession=1 triggers initial roll for all dice
+        const makeDice = () => DIE_SIDES.map((s, i) => ({ id: i, sides: s, value: 0, restUntil: 0 }));
+        const rollDie = s => Math.floor(Math.random() * s) + 1;
+        const isAvail = d => state.possession > d.restUntil;
+        const useDie = d => { d.restUntil = state.possession + 1; };
+
+        // ── State ────────────────────────────────────────────────────
         let state = {
             scores: { h: 0, v: 0 },
             ballPos: 0,
-            turn: 0, // 0: Home, 1: Visitor
-            turnCount: 1,
-            maxTurns: 20,
-            phase: 'attack',
-            dice: [], side: [], sel: [],
-            wall: { "-3": 0, "-2": 0, "-1": 0, "1": 0, "2": 0, "3": 0 }
+            turn: 0,          // 0 = Home attacks, 1 = Visitor attacks
+            phase: 'attack',  // 'defend' | 'attack'
+            hDice: makeDice(),
+            vDice: makeDice(),
+            sel: [],          // selected die IDs (home player's dice)
+            wall: { "-3": 0, "-2": 0, "-1": 0, "1": 0, "2": 0, "3": 0 },
+            possession: 1,
         };
 
+        // ── Logging ──────────────────────────────────────────────────
         const log = (m, c = "text-emerald-400") => {
             const l = document.getElementById('log');
             l.innerHTML += `<div class="${c}">> ${m}</div>`;
             l.scrollTop = l.scrollHeight;
         };
 
-        const roll = () => Math.floor(Math.random() * 6) + 1;
+        // ── Die element factory ──────────────────────────────────────
+        function makeDieEl(d, clickable) {
+            const el = document.createElement('div');
+            const tired = !isAvail(d);
+            const selected = state.sel.includes(d.id);
+            el.className = `die ${selected ? 'die-selected' : ''} ${tired ? 'die-tired' : ''}`;
+            el.innerHTML = `<span class="die-label">d${d.sides}</span><span class="die-num">${tired ? '·' : d.value}</span>`;
+            if (clickable && !tired) {
+                el.onclick = () => {
+                    if (state.sel.includes(d.id)) state.sel.splice(state.sel.indexOf(d.id), 1);
+                    else state.sel.push(d.id);
+                    updateUI();
+                };
+            }
+            return el;
+        }
 
+        // ── UI update ────────────────────────────────────────────────
         function updateUI() {
             document.getElementById('score-h').innerText = state.scores.h;
             document.getElementById('score-v').innerText = state.scores.v;
-            document.getElementById('turn-badge').innerText = `Turn ${state.turnCount} / ${state.maxTurns}`;
+
+            const phaseLabel = state.phase === 'defend' ? 'Set Your Wall' :
+                               state.turn === 0 ? 'Home Attacks' : 'Visitor Attacks';
+            document.getElementById('turn-badge').innerText = `${phaseLabel} — P${state.possession}`;
 
             const posMap = { "-3": 8, "-2": 25, "-1": 42, "0": 50, "1": 58, "2": 75, "3": 92 };
             document.getElementById('ball').style.left = `calc(${posMap[state.ballPos]}% - 11px)`;
@@ -235,189 +337,233 @@
                 document.getElementById(`z${z}`).classList.remove('active-target');
                 document.getElementById(`w${z}`).innerText = state.wall[z] || "-";
             });
-
             if (state.phase === 'attack') {
                 const target = getNextZone(state.ballPos, state.turn === 0 ? 1 : -1);
                 if (target) document.getElementById(`z${target}`).classList.add('active-target');
             }
 
-            const h = document.getElementById('hand'); h.innerHTML = '';
-            state.dice.forEach((v, i) => {
-                const d = document.createElement('div');
-                d.className = `die ${state.sel.includes(i) ? 'die-selected' : ''}`;
-                d.innerText = v;
-                d.onclick = () => {
-                    const sIdx = state.sel.indexOf(i);
-                    if (sIdx > -1) state.sel.splice(sIdx, 1); else state.sel.push(i);
-                    updateUI();
-                };
-                h.appendChild(d);
+            // Render home player's dice
+            const hand = document.getElementById('hand');
+            const side = document.getElementById('side');
+            hand.innerHTML = ''; side.innerHTML = '';
+            const interactive = (state.phase === 'attack' && state.turn === 0) ||
+                                (state.phase === 'defend' && state.turn === 1);
+            state.hDice.forEach(d => {
+                const el = makeDieEl(d, interactive);
+                (isAvail(d) ? hand : side).appendChild(el);
             });
 
-            const s = document.getElementById('side'); s.innerHTML = '';
-            state.side.forEach(v => {
-                const d = document.createElement('div'); d.className = 'die die-sidelined'; d.innerText = v;
-                s.appendChild(d);
-            });
+            const sum = state.sel.reduce((a, id) => {
+                const d = state.hDice.find(x => x.id === id);
+                return a + (d ? d.value : 0);
+            }, 0);
+            document.getElementById('sum-display').innerText = `Selected: ${sum}`;
 
-            const sum = state.sel.reduce((a, c) => a + state.dice[c], 0);
-            document.getElementById('sum-display').innerText = `Total: ${sum}`;
-
-            const actionBtns = document.getElementById('attack-controls');
-            const setupBtns = document.getElementById('defend-controls');
-            if (state.phase === 'defend') {
-                actionBtns.classList.add('hidden');
-                setupBtns.classList.remove('hidden');
+            const attackControls = document.getElementById('attack-controls');
+            const defendControls = document.getElementById('defend-controls');
+            if (state.phase === 'defend' && state.turn === 1) {
+                attackControls.classList.add('hidden');
+                defendControls.classList.remove('hidden');
                 renderDefenseButtons();
+            } else if (state.phase === 'attack' && state.turn === 0) {
+                attackControls.classList.remove('hidden');
+                defendControls.classList.add('hidden');
             } else {
-                actionBtns.classList.remove('hidden');
-                setupBtns.classList.add('hidden');
+                // AI's turn — hide controls
+                attackControls.classList.add('hidden');
+                defendControls.classList.add('hidden');
             }
         }
 
+        // ── Zone navigation ──────────────────────────────────────────
         function getNextZone(curr, dir) {
             if (curr === 0) return dir === 1 ? "1" : "-1";
             const idx = Z_IDS.indexOf(curr.toString());
-            const nextIdx = idx + dir;
-            if (nextIdx < 0 || nextIdx >= Z_IDS.length) return null;
-            return Z_IDS[nextIdx];
+            const next = idx + dir;
+            if (next < 0 || next >= Z_IDS.length) return null;
+            return Z_IDS[next];
         }
 
+        // ── Defense buttons (human wall setup) ───────────────────────
         function renderDefenseButtons() {
             const grid = document.getElementById('wall-assign-grid');
             grid.innerHTML = '';
-            Z_IDS.forEach(z => {
-                const zVal = parseInt(z);
-                const canPlace = state.turn === 1 ? (zVal < state.ballPos) : (zVal > state.ballPos);
-                if (canPlace) {
+            [...Z_IDS]
+                .sort((a, b) => Math.abs(parseInt(a)) - Math.abs(parseInt(b)))
+                .forEach(z => {
+                    const zVal = parseInt(z);
+                    if (zVal >= state.ballPos) return; // home defends negative side
                     const btn = document.createElement('button');
                     btn.className = "bg-blue-600 py-2 rounded text-[9px] font-black uppercase";
-                    btn.innerText = `SET ${z.replace('-', 'H').replace('1', 'Z1').replace('2', 'Z2').replace('3', 'GOAL')}`;
+                    btn.innerText = `SET ${ZONE_NAMES[z]}`;
                     btn.onclick = () => {
-                        const sum = state.sel.reduce((a, c) => a + state.dice[c], 0);
-                        if (sum > 0) {
-                            state.wall[z] = (state.wall[z] || 0) + sum;
-                            state.dice = state.dice.filter((_, i) => !state.sel.includes(i));
-                            state.sel = [];
-                            updateUI();
+                        if (state.sel.length === 0 || state.sel.length > 3) {
+                            if (state.sel.length > 3) alert("Select 1–3 dice.");
+                            return;
                         }
+                        const selDice = state.sel.map(id => state.hDice.find(d => d.id === id)).filter(Boolean);
+                        const sum = selDice.reduce((a, d) => a + d.value, 0);
+                        state.wall[z] = (state.wall[z] || 0) + sum;
+                        selDice.forEach(useDie);
+                        state.sel = [];
+                        updateUI();
                     };
                     grid.appendChild(btn);
+                });
+        }
+
+        // ── Possession start ─────────────────────────────────────────
+        function startPossession() {
+            Object.keys(state.wall).forEach(k => state.wall[k] = 0);
+            state.sel = [];
+
+            // Re-roll only dice returning from tired; unused dice keep their value
+            [state.hDice, state.vDice].forEach(dice =>
+                dice.forEach(d => {
+                    if (d.restUntil === state.possession - 1) d.value = rollDie(d.sides);
+                })
+            );
+
+            if (state.turn === 0) {
+                // Home attacks, Visitor defends (AI)
+                aiSetWall();
+                state.phase = 'attack';
+                log(`Possession ${state.possession}: Home attacks!`);
+            } else {
+                // Visitor attacks, Home defends (human)
+                const d20 = state.hDice[D20];
+                if (isAvail(d20)) {
+                    state.wall["-3"] = d20.value;
+                    useDie(d20);
+                    log(`Possession ${state.possession}: Visitor attacks — your d20 (${d20.value}) guards the goal. Set your wall!`);
+                } else {
+                    log(`Possession ${state.possession}: Visitor attacks — d20 is resting, goal unguarded! Set your wall!`);
                 }
-            });
+                state.phase = 'defend';
+            }
+            updateUI();
         }
 
-        function triggerFullTime() {
-            const h = state.scores.h;
-            const v = state.scores.v;
-            let resultTxt = h === v ? "It's a Draw" : (h > v ? "Home Victory" : "Visitor Victory");
-            document.getElementById('ft-score').innerText = `${h} - ${v}`;
-            document.getElementById('ft-result').innerText = resultTxt;
-            document.getElementById('ft-overlay').style.display = 'flex';
+        // ── AI wall setup ────────────────────────────────────────────
+        function aiSetWall() {
+            // d20 auto to visitor goal
+            const d20 = state.vDice[D20];
+            if (isAvail(d20)) { state.wall["3"] = d20.value; useDie(d20); }
+
+            // Place top available dice: 2 in defense, 1 in midfield
+            const avail = state.vDice.filter(d => isAvail(d)).sort((a, b) => b.value - a.value);
+            if (avail[0]) { state.wall["2"] += avail[0].value; useDie(avail[0]); }
+            if (avail[1]) { state.wall["2"] += avail[1].value; useDie(avail[1]); }
+            if (avail[2]) { state.wall["1"]  = avail[2].value; useDie(avail[2]); }
         }
 
-        function turnover() {
-            if (state.turnCount >= state.maxTurns) {
+        // ── End possession ───────────────────────────────────────────
+        function endPossession(scored) {
+            state.ballPos = 0;
+            if (scored && (state.scores.h >= WIN_GOALS || state.scores.v >= WIN_GOALS)) {
+                updateUI();
                 triggerFullTime();
                 return;
             }
-            state.turnCount++;
-            state.turn = state.turn === 0 ? 1 : 0;
-            state.sel = []; state.side = [];
-            state.dice = Array.from({ length: 6 }, roll);
-            Object.keys(state.wall).forEach(k => state.wall[k] = 0);
-
-            if (state.turn === 1) {
-                state.phase = 'defend';
-                log("Turnover! Visitor's Turn.");
-            } else {
-                state.phase = 'attack';
-                const d = Array.from({ length: 6 }, roll).sort((a, b) => b - a);
-                state.wall["3"] = d[0] + d[1] + d[2];
-                if (state.ballPos < 2) state.wall["2"] = d[3] + d[4];
-                if (state.ballPos < 1) state.wall["1"] = d[5];
-                log("AI has set its Wall.");
-                updateUI();
-            }
-            updateUI();
+            state.possession++;
+            state.turn = 1 - state.turn;
+            startPossession();
         }
 
-        document.getElementById('btn-lock-def').onclick = () => {
-            if (state.dice.length > 0) { alert("Assign all 6 dice!"); return; }
-            state.phase = 'attack';
-            state.dice = Array.from({ length: 6 }, roll);
-            updateUI();
-            runAi();
-        };
+        // ── Full time overlay ────────────────────────────────────────
+        function triggerFullTime() {
+            const h = state.scores.h, v = state.scores.v;
+            const result = h > v ? "Home Victory" : v > h ? "Visitor Victory" : "It's a Draw";
+            document.getElementById('ft-score').innerText = `${h} - ${v}`;
+            document.getElementById('ft-result').innerText = result;
+            document.getElementById('ft-overlay').style.display = 'flex';
+        }
 
-        async function handleAttack() {
-            const sum = state.sel.reduce((a, c) => a + state.dice[c], 0);
+        // ── Human attack ─────────────────────────────────────────────
+        function handleAttack() {
+            if (state.sel.length === 0) return;
+            if (state.sel.length > 3) { alert("Select 1–3 dice."); return; }
+
+            const attackDice = state.sel.map(id => state.hDice.find(d => d.id === id)).filter(Boolean);
+            const sum = attackDice.reduce((a, d) => a + d.value, 0);
             const target = getNextZone(state.ballPos, 1);
             if (!target) return;
             const wallVal = state.wall[target] || 0;
 
+            // Used dice are tired regardless of outcome
+            attackDice.forEach(useDie);
+            state.sel = [];
+
             if (sum > wallVal) {
-                log(`Breach! ${sum} beats ${wallVal}`);
+                log(`Breach! ${sum} beats wall of ${wallVal} in ${ZONE_NAMES[target]}`);
                 state.ballPos = parseInt(target);
-                const used = state.sel.map(i => state.dice[i]);
-                state.dice = state.dice.filter((_, i) => !state.sel.includes(i));
-                state.sel = [];
-                if (state.side.length > 0) {
-                    const rec = Array.from({ length: state.side.length }, roll);
-                    state.dice.push(...rec);
-                }
-                state.side = used;
                 if (state.ballPos === 3) {
                     log("GOAL!", "text-yellow-400 font-bold");
-                    state.scores.h++; state.ballPos = 0;
-                    turnover();
+                    state.scores.h++;
+                    endPossession(true);
+                } else {
+                    updateUI();
                 }
             } else {
-                log("Blocked! Turnover.");
-                turnover();
+                log(`Blocked! ${sum} vs ${wallVal} in ${ZONE_NAMES[target]} — Turnover`);
+                endPossession(false);
             }
-            updateUI();
         }
 
+        // ── AI attack ────────────────────────────────────────────────
         async function runAi() {
+            await new Promise(r => setTimeout(r, 600));
             while (state.turn === 1 && state.phase === 'attack') {
                 await new Promise(r => setTimeout(r, 1200));
                 const target = getNextZone(state.ballPos, -1);
-                if (!target) return;
-                const wallVal = state.wall[target] || 0;
-                state.dice.sort((a, b) => b - a);
-                let cur = 0; let usedIdx = [];
-                for (let i = 0; i < state.dice.length; i++) {
-                    cur += state.dice[i]; usedIdx.push(i);
-                    if (cur > wallVal) break;
-                }
+                if (!target) { endPossession(false); return; }
 
-                if (cur > wallVal) {
-                    log(`AI Attack: ${cur} > ${wallVal}`);
+                const wallVal = state.wall[target] || 0;
+                const avail = state.vDice.filter(isAvail).sort((a, b) => b.value - a.value);
+                if (avail.length === 0) { log("AI out of dice — Turnover"); endPossession(false); return; }
+
+                // Greedily pick up to 3 dice
+                let sum = 0, used = [];
+                for (const d of avail) {
+                    if (used.length >= 3) break;
+                    sum += d.value; used.push(d);
+                    if (sum > wallVal) break;
+                }
+                used.forEach(useDie);
+
+                if (sum > wallVal) {
+                    log(`AI breaches ${ZONE_NAMES[target]}: ${sum} > ${wallVal}`);
                     state.ballPos = parseInt(target);
-                    const v = usedIdx.map(i => state.dice[i]);
-                    state.dice = state.dice.filter((_, i) => !usedIdx.includes(i));
-                    if (state.side.length > 0) state.dice.push(...Array.from({ length: state.side.length }, roll));
-                    state.side = v;
+                    updateUI();
                     if (state.ballPos === -3) {
-                        log("AI GOAL!"); state.scores.v++; state.ballPos = 0;
-                        turnover(); return;
+                        log("AI GOAL!", "text-red-400 font-bold");
+                        state.scores.v++;
+                        endPossession(true);
+                        return;
                     }
                 } else {
-                    log("AI Blocked!"); turnover(); return;
+                    log(`AI blocked in ${ZONE_NAMES[target]}: ${sum} vs ${wallVal} — Turnover`);
+                    endPossession(false);
+                    return;
                 }
-                updateUI();
-                if (state.dice.length === 0 && state.turn === 1) { turnover(); return; }
+
+                if (state.vDice.filter(isAvail).length === 0) {
+                    log("AI out of dice — Turnover"); endPossession(false); return;
+                }
             }
         }
 
+        // ── Button bindings ──────────────────────────────────────────
         document.getElementById('btn-attack').onclick = handleAttack;
-        document.getElementById('btn-pass').onclick = turnover;
+        document.getElementById('btn-pass').onclick = () => { log("Possession ended."); endPossession(false); };
+        document.getElementById('btn-lock-def').onclick = () => {
+            state.phase = 'attack';
+            updateUI();
+            runAi();
+        };
 
-        state.dice = Array.from({ length: 6 }, roll);
-        const startD = Array.from({ length: 6 }, roll).sort((a, b) => b - a);
-        state.wall["3"] = startD[0] + startD[1] + startD[2]; state.wall["2"] = startD[3] + startD[4]; state.wall["1"] = startD[5];
-        updateUI();
+        // ── Kick off ─────────────────────────────────────────────────
+        startPossession();
     </script>
 </body>
 
